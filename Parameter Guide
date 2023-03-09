@@ -1,0 +1,15 @@
+GUIDE FOR USING PERLIN NOISE SURFACE GENERATOR
+The code was based off the UE5 Voxel Tutorial from BLaZeKiLL as well as the Perlin Noise youtube challenge from michaelg29
+https://github.com/BLaZeKiLL/UE5VoxelTutorial
+https://github.com/michaelg29/yt-challenges/blob/master/19%20-%20Perlin%20Noise/perlin.hpp
+
+UNDERSTANDING PERLIN NOISE
+This guide does not explain the foundations of Perlin Noise, if you want to know more you can check out some guides.
+These are some of the guides I found helpful to understand Perlin noise.
+https://www.youtube.com/watch?v=6-0UaeJBumA
+https://rtouti.github.io/graphics/perlin-noise-algorithm#:~:text=There%20is%20basically%204%20type,also%20made%20by%20Ken%20Perlin
+https://web.archive.org/web/20160530124230/http://freespace.virgin.net/hugo.elias/models/m_perlin.htm
+https://github.com/michaelg29/yt-challenges/blob/master/19%20-%20Perlin%20Noise/perlin.hpp
+
+
+PARAMETER EFFECTS ON GENERATED SURFACE
