@@ -46,8 +46,8 @@ void ACavernGenerator::BeginPlay()
 	//ApplyMesh();
 
 	//CUSTOM MESH
-	CustomMesh();
-	ApplyMesh();
+	CustomMesh(perlinSeed , 1);
+	ApplyMesh(0);
 
 	UE_LOG(LogTemp, Warning, TEXT("Successfully set static mesh"));
 }
@@ -190,7 +190,7 @@ void ACavernGenerator::PostEditChangeProperty(FPropertyChangedEvent& e)
 
 		MeshData.Clear();
 		//Mesh->ClearAllMeshSections();
-		CustomMesh();
+		CustomMesh(perlinSeed, 1);
 		//ApplyMesh();
 		Mesh->UpdateMeshSection_LinearColor(
 			0,
@@ -250,114 +250,302 @@ void ACavernGenerator::GenerateMesh(TArray<TArray<TArray<float>>> matrix)
 	}
 }
 
-void ACavernGenerator::CustomMesh()
+
+
+void ACavernGenerator::CustomMesh(int seed, int section)
 {
-	TArray<TArray<float>> matrixPerlin = PerlinNoise(perlinSeed, y_size, z_size);
-
-	//FVector V1 = FVector( 0.0, 0.0, 0.0);
-	//FVector V2 = FVector( 0.0f, 100, 0);
-	//FVector V3 = FVector( 0.0f, 0, 100);
-	//FVector V4 = FVector( 0.0f, 100, 100);
-	//MeshData.Vertices.Append({ V1, V3, V4 });
-	//MeshData.Triangles.Append({
-	//			VertexCount,
-	//			VertexCount + 1,
-	//			VertexCount + 2,
-	//	});
-	//auto Normal = FVector::CrossProduct(V3 - V1, V4 - V1);
-	//MeshData.Normals.Append({
-	//	Normal,
-	//	Normal,
-	//	Normal,
-	//	});
-	//auto Color = FColor::MakeRandomColor();
-	//MeshData.Colors.Append({
-	//Color,
-	//Color,
-	//Color
-	//	});
-	//VertexCount += 3;
-	//MeshData.Vertices.Append({ V4, V2, V1 });
-	//MeshData.Triangles.Append({
-	//			VertexCount,
-	//			VertexCount + 1,
-	//			VertexCount + 2,
-	//	});
-	//auto Normal2 = FVector::CrossProduct(V2 - V4, V1 - V4);
-	//MeshData.Normals.Append({
-	//	Normal2,
-	//	Normal2,
-	//	Normal2,
-	//	});
-	//MeshData.Colors.Append({
-	//Color,
-	//Color,
-	//Color
-	//	});
-	//VertexCount += 3;
-
-
-
-	for (int z = 1; z < z_size - 1; z++) {
-		for (int y = 1; y < y_size - 1; y++) {
-			FVector V1 = FVector(matrixPerlin[z][y], float(y * gridSize), float(z * gridSize));
-			FVector V2 = FVector(matrixPerlin[z][y + 1], float( (y + 1) * gridSize), float(z * gridSize));
-			FVector V3 = FVector(matrixPerlin[z + 1][y], float(y * gridSize), float((z + 1) * gridSize));
-			FVector V4 = FVector(matrixPerlin[z + 1][y + 1], float( (y + 1) * gridSize), float((z + 1) * gridSize));
-
-			auto Normal = FVector::CrossProduct(V3 - V1, V4 - V1);
-			auto Normal2 = FVector::CrossProduct(V2 - V4, V1 - V4);
-			auto Color = FLinearColor::MakeRandomColor();
-
-			Normal.Normalize();
-			Normal2.Normalize();
-
-			MeshData.Vertices.Append({ V1, V3, V4 });
-			MeshData.Triangles.Append({
-				VertexCount + 0,
-				VertexCount + 1,
-				VertexCount + 2,
-				});
-			MeshData.Normals.Append({
-				Normal,
-				Normal,
-				Normal
-				});
-			MeshData.Colors.Append({
-				Color,
-				Color,
-				Color
-				});
-			VertexCount += 3;
-
-			MeshData.Vertices.Append({ V4, V2, V1 });
-			MeshData.Triangles.Append({
-				VertexCount + 0,
-				VertexCount + 1,
-				VertexCount + 2,
-				});
-			MeshData.Normals.Append({
-				Normal2,
-				Normal2,
-				Normal2
-				});
-			MeshData.Colors.Append({
-				Color,
-				Color,
-				Color
-				});
-			VertexCount += 3;
+	srand(seed);
+	for (int i = 0; i < 4; i++) {
+		if (i == 0 || i == 1) {
+			TArray<TArray<float>> matrixPerlin = PerlinNoise(rand(), y_size, z_size * 1.5);
+			CreateSurfaceMatrix(matrixPerlin, i);
 		}
+		else if (i == 2 || i == 3) {
+			TArray<TArray<float>> matrixPerlin = PerlinNoise(rand(), x_size * 1.5, y_size);
+			CreateSurfaceMatrix(matrixPerlin, i);
+		}
+
 	}
 
 	UE_LOG(LogTemp, Warning, TEXT("Mesh set"));
 }
 
-void ACavernGenerator::ApplyMesh() const
+void ACavernGenerator::CreateSurfaceMatrix(TArray<TArray<float>>& matrix, int type)
+{
+	int matrixLen = matrix.Num();
+	int matrixBreadth = matrix[0].Num();
+	int smallestVal = 0;
+	for (int y = 0; y < matrixLen; y++) {
+		for (int x = 0; x < matrixBreadth; x++) {
+			if (matrix[y][x] <= smallestVal) {
+				smallestVal = matrix[y][x];
+			}
+		}
+	}
+
+	// Types 0 - Left wall, 1 - Right wall, 2 - Ceiling, 3 - Ground
+	if (type == 0) {
+		for (int z = 1; z < (z_size * 1.5) - 1; z++) {
+			for (int y = 1; y < y_size - 1; y++) {
+				FVector V1 = FVector(matrix[z][y] - smallestVal, float(y * gridSize), float(z * gridSize));
+				FVector V2 = FVector(matrix[z][y + 1] - smallestVal, float((y + 1) * gridSize), float(z * gridSize));
+				FVector V3 = FVector(matrix[z + 1][y] - smallestVal, float(y * gridSize), float((z + 1) * gridSize));
+				FVector V4 = FVector(matrix[z + 1][y + 1] - smallestVal, float((y + 1) * gridSize), float((z + 1) * gridSize));
+
+				auto Normal = FVector::CrossProduct(V4 - V1, V3 - V1);
+				auto Normal2 = FVector::CrossProduct(V1 - V4, V2 - V4);
+				auto Color = FLinearColor::MakeRandomColor();
+
+				Normal.Normalize();
+				Normal2.Normalize();
+
+				MeshData.Vertices.Append({ V1, V3, V4 });
+				MeshData.UV0.Append({
+					FVector2D(float(y * gridSize) / 300, float(z * gridSize) / 300),
+					FVector2D(float(y * gridSize) / 300, float((z + 1) * gridSize) / 300),
+					FVector2D(float((y + 1) * gridSize) / 300, float((z + 1) * gridSize) / 300),
+					});
+				MeshData.Triangles.Append({
+					VertexCount + 0,
+					VertexCount + 1,
+					VertexCount + 2,
+					});
+				MeshData.Normals.Append({
+					Normal,
+					Normal,
+					Normal
+					});
+				MeshData.Colors.Append({
+					Color,
+					Color,
+					Color
+					});
+				VertexCount += 3;
+
+				MeshData.Vertices.Append({ V4, V2, V1 });
+				MeshData.UV0.Append({
+					FVector2D(float((y + 1) * gridSize) / 300, float((z + 1) * gridSize) / 300),
+					FVector2D(float((y + 1) * gridSize) / 300, float(z * gridSize) / 300),
+					FVector2D(float(y * gridSize) / 300, float(z * gridSize) / 300),
+					});
+				MeshData.Triangles.Append({
+					VertexCount + 0,
+					VertexCount + 1,
+					VertexCount + 2,
+					});
+				MeshData.Normals.Append({
+					Normal2,
+					Normal2,
+					Normal2
+					});
+				MeshData.Colors.Append({
+					Color,
+					Color,
+					Color
+					});
+				VertexCount += 3;
+			}
+		}
+	}
+	else if (type == 1) {
+		for (int z = 1; z < (z_size * 1.5) - 1; z++) {
+			for (int y = 1; y < y_size - 1; y++) {
+				FVector V1 = FVector(matrix[z][y] + (x_size * gridSize) - smallestVal, float(y * gridSize), float(z * gridSize));
+				FVector V2 = FVector(matrix[z][y + 1] + (x_size * gridSize) - smallestVal, float((y + 1) * gridSize), float(z * gridSize));
+				FVector V3 = FVector(matrix[z + 1][y] + (x_size * gridSize) - smallestVal, float(y * gridSize), float((z + 1) * gridSize));
+				FVector V4 = FVector(matrix[z + 1][y + 1] + (x_size * gridSize) - smallestVal, float((y + 1) * gridSize), float((z + 1) * gridSize));
+
+				auto Normal = FVector::CrossProduct(V3 - V1, V4 - V1);
+				auto Normal2 = FVector::CrossProduct(V2 - V4, V1 - V4);
+				auto Color = FLinearColor::MakeRandomColor();
+
+				Normal.Normalize();
+				Normal2.Normalize();
+
+				MeshData.Vertices.Append({ V4, V3, V1 });
+				MeshData.UV0.Append({
+					FVector2D(float(y * gridSize) / 300, float(z * gridSize) / 300),
+					FVector2D(float(y * gridSize) / 300, float((z + 1) * gridSize) / 300),
+					FVector2D(float((y + 1) * gridSize) / 300, float((z + 1) * gridSize) / 300),
+					});
+				MeshData.Triangles.Append({
+					VertexCount + 0,
+					VertexCount + 1,
+					VertexCount + 2,
+					});
+				MeshData.Normals.Append({
+					Normal,
+					Normal,
+					Normal
+					});
+				MeshData.Colors.Append({
+					Color,
+					Color,
+					Color
+					});
+				VertexCount += 3;
+
+				MeshData.Vertices.Append({ V1, V2, V4 });
+				MeshData.UV0.Append({
+					FVector2D(float((y + 1) * gridSize) / 300, float((z + 1) * gridSize) / 300),
+					FVector2D(float((y + 1) * gridSize) / 300, float(z * gridSize) / 300),
+					FVector2D(float(y * gridSize) / 300, float(z * gridSize) / 300),
+					});
+				MeshData.Triangles.Append({
+					VertexCount + 0,
+					VertexCount + 1,
+					VertexCount + 2,
+					});
+				MeshData.Normals.Append({
+					Normal2,
+					Normal2,
+					Normal2
+					});
+				MeshData.Colors.Append({
+					Color,
+					Color,
+					Color
+					});
+				VertexCount += 3;
+			}
+		}
+	}
+
+	else if (type == 2) {
+		for (int y = 1; y < y_size - 1; y++) {
+			for (int x = 1; x < (x_size*1.5) - 1; x++) {
+				FVector V1 = FVector(float(x * gridSize), float(y * gridSize), matrix[y][x] + float(z_size * gridSize) - smallestVal);
+				FVector V2 = FVector(float(x * gridSize), float((y + 1) * gridSize), matrix[y+1][x] + float(z_size * gridSize) - smallestVal);
+				FVector V3 = FVector(float((x+1)*gridSize), float(y * gridSize), matrix[y][x+1] + float((z_size) * gridSize) - smallestVal);
+				FVector V4 = FVector(float((x+1) * gridSize), float((y + 1) * gridSize), matrix[y + 1][x + 1] + float((z_size) * gridSize) - smallestVal);
+
+				auto Normal = FVector::CrossProduct(V3 - V1, V4 - V1);
+				auto Normal2 = FVector::CrossProduct(V2 - V4, V1 - V4);
+				auto Color = FLinearColor::MakeRandomColor();
+
+				Normal.Normalize();
+				Normal2.Normalize();
+
+				MeshData.Vertices.Append({ V1, V3, V4 });
+				MeshData.UV0.Append({
+					FVector2D(float(x * gridSize) / 300, float(y * gridSize) / 300),
+					FVector2D(float(x * gridSize) / 300, float((y + 1) * gridSize) / 300),
+					FVector2D(float((x + 1) * gridSize) / 300, float((y + 1) * gridSize) / 300),
+					});
+				MeshData.Triangles.Append({
+					VertexCount + 0,
+					VertexCount + 1,
+					VertexCount + 2,
+					});
+				MeshData.Normals.Append({
+					Normal,
+					Normal,
+					Normal
+					});
+				MeshData.Colors.Append({
+					Color,
+					Color,
+					Color
+					});
+				VertexCount += 3;
+
+				MeshData.Vertices.Append({ V4, V2, V1 });
+				MeshData.UV0.Append({
+					FVector2D(float((x + 1) * gridSize) / 300, float((y + 1) * gridSize) / 300),
+					FVector2D(float((x + 1) * gridSize) / 300, float(y * gridSize) / 300),
+					FVector2D(float(x * gridSize) / 300, float(y * gridSize) / 300),
+					});
+				MeshData.Triangles.Append({
+					VertexCount + 0,
+					VertexCount + 1,
+					VertexCount + 2,
+					});
+				MeshData.Normals.Append({
+					Normal2,
+					Normal2,
+					Normal2
+					});
+				MeshData.Colors.Append({
+					Color,
+					Color,
+					Color
+					});
+				VertexCount += 3;
+			}
+		}
+	}
+
+	else if (type == 3) {
+		for (int y = 1; y < y_size - 1; y++) {
+			for (int x = 1; x < (x_size * 1.5) - 1; x++) {
+				FVector V1 = FVector(float(x * gridSize), float(y * gridSize), matrix[y][x] - smallestVal);
+				FVector V2 = FVector(float(x * gridSize), float((y + 1) * gridSize), matrix[y + 1][x] - smallestVal);
+				FVector V3 = FVector(float((x + 1) * gridSize), float(y * gridSize), matrix[y][x + 1] - smallestVal);
+				FVector V4 = FVector(float((x + 1) * gridSize), float((y + 1) * gridSize), matrix[y + 1][x + 1] - smallestVal);
+
+				auto Normal = FVector::CrossProduct(V3 - V1, V4 - V1);
+				auto Normal2 = FVector::CrossProduct(V2 - V4, V1 - V4);
+				auto Color = FLinearColor::MakeRandomColor();
+
+				Normal.Normalize();
+				Normal2.Normalize();
+
+				MeshData.Vertices.Append({ V4, V3, V1 });
+				MeshData.UV0.Append({
+					FVector2D(float(x * gridSize) / 300, float(y * gridSize) / 300),
+					FVector2D(float(x * gridSize) / 300, float((y + 1) * gridSize) / 300),
+					FVector2D(float((x + 1) * gridSize) / 300, float((y + 1) * gridSize) / 300),
+					});
+				MeshData.Triangles.Append({
+					VertexCount + 0,
+					VertexCount + 1,
+					VertexCount + 2,
+					});
+				MeshData.Normals.Append({
+					Normal,
+					Normal,
+					Normal
+					});
+				MeshData.Colors.Append({
+					Color,
+					Color,
+					Color
+					});
+				VertexCount += 3;
+
+				MeshData.Vertices.Append({ V1, V2, V4 });
+				MeshData.UV0.Append({
+					FVector2D(float((x + 1) * gridSize) / 300, float((y + 1) * gridSize) / 300),
+					FVector2D(float((x + 1) * gridSize) / 300, float(y * gridSize) / 300),
+					FVector2D(float(x * gridSize) / 300, float(y * gridSize) / 300),
+					});
+				MeshData.Triangles.Append({
+					VertexCount + 0,
+					VertexCount + 1,
+					VertexCount + 2,
+					});
+				MeshData.Normals.Append({
+					Normal2,
+					Normal2,
+					Normal2
+					});
+				MeshData.Colors.Append({
+					Color,
+					Color,
+					Color
+					});
+				VertexCount += 3;
+			}
+		}
+	}
+
+}
+
+void ACavernGenerator::ApplyMesh(int section) const
 {
 	Mesh->SetMaterial(0, Material);
 	Mesh->CreateMeshSection_LinearColor(
-		0,
+		section,
 		MeshData.Vertices,
 		MeshData.Triangles,
 		MeshData.Normals,

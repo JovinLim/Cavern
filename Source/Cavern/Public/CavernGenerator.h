@@ -74,7 +74,7 @@ public:
 	virtual void GenerateMesh(TArray<TArray<TArray<float>>> matrix);
 	void Generate3DHeightMap(TArray<TArray<TArray<float>>> matrix);
 	void Setup();
-	void ApplyMesh() const;
+	void ApplyMesh(int section) const;
 	void SmoothMatrix(TArray<TArray<TArray<float>>>& matrix);
 	int adjCount(TArray<TArray<TArray<float>>>& matrix, TArray<int> target);
 	void generateStag(TArray<TArray<TArray<float>>>& matrix);
@@ -90,7 +90,8 @@ private:
 	float noise2D(float x, float y);
 
 	// Custom mesh from Perlin Noise
-	void CustomMesh();
+	void CustomMesh(int seed, int section);
+	void CreateSurfaceMatrix(TArray<TArray<float>>& matrix, int type);
 
 	// Marching Cubes
 	TArray<float> Voxels;
