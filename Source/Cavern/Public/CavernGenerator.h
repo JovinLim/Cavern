@@ -22,24 +22,42 @@ public:
 	UStaticMeshComponent* _smComp;
 	//UStaticMesh* _smComp;
 	TArray<TArray<int>> groundMatrix;
-	TArray<int> usedSpace = { 70 };
 
-	UPROPERTY(BlueprintReadWrite, Category = "Marching Cubes")
+	UPROPERTY(EditInstanceOnly, Category = "Marching Cubes")
 	int gridSize = 10;
+
+	UPROPERTY(EditInstanceOnly, Category = "Marching Cubes")
 	int marchingSeed = 1;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Marching Cubes")
+	UPROPERTY(EditInstanceOnly, Category = "Marching Cubes")
 		bool Interpolation = false;
 
-	UPROPERTY(BlueprintReadWrite, Category = "Marching Cubes")
-		float SurfaceLevel = 40.0f;
+	UPROPERTY(EditInstanceOnly, Category = "Marching Cubes")
+		float SurfaceLevel = 0.0f;
 
-	UPROPERTY(EditAnywhere, Category = "Marching Cubes")
+	UPROPERTY(EditInstanceOnly, Category = "Map Size")
 		int z_size = 50;
-	UPROPERTY(EditAnywhere, Category = "Marching Cubes")
-		int y_size = 50;
-	UPROPERTY(EditAnywhere, Category = "Marching Cubes")
-		int x_size = 50;
+	UPROPERTY(EditInstanceOnly, Category = "Map Size")
+		int y_size = 100;
+	UPROPERTY(EditInstanceOnly, Category = "Map Size")
+		int x_size = 100;
+
+	UPROPERTY(EditInstanceOnly, Category = "Cellular Automata")
+		int CASeed = 1;
+	UPROPERTY(EditInstanceOnly, Category = "Cellular Automata")
+		int stagZ_size = 20;
+
+	UPROPERTY(EditInstanceOnly, Category = "Cellular Automata")
+		int stagHeightScale = 4;
+
+	UPROPERTY(EditInstanceOnly, Category = "Cellular Automata", meta = (ClampMin = "4", ClampMax = "100", UIMin = "4", UIMax = "100"))
+		int minStagSize = 8;
+
+	UPROPERTY(EditInstanceOnly, Category = "Cellular Automata", meta = (ClampMin = "4", ClampMax = "100", UIMin = "4", UIMax = "100"))
+		int maxStagSize = 20;
+
+	UPROPERTY(EditInstanceOnly, Category = "Cellular Automata")
+		int EmptySpace = 60;
 
 	//UPROPERTY(EditAnywhere, Category = "Marching Cubes")
 	//	int x_jitter = 5;
@@ -65,29 +83,41 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Perlin Noise")
 		int perlinSeed = 1;
 	UPROPERTY(EditAnywhere, Category = "Perlin Noise")
-		int NoiseOffset = 250;
+		int WallNoiseOffset = 250;
+	UPROPERTY(EditAnywhere, Category = "Perlin Noise")
+		float StagNoiseOffset = 1.5;
+	UPROPERTY(EditAnywhere, Category = "Perlin Noise")
+		float PerlinUVScale = 500;
 
-	// Marching Cubes
+	// General
 	TArray<TArray<TArray<float>>> GenerateMatrix();
+	TArray<TArray<float>> GenerateMatrix2D();
 	void PrintMatrix(TArray<TArray<float>>& matrix);
 	void ShowDebugGeometry(TArray<TArray<TArray<float>>> matrix);
-	virtual void GenerateMesh(TArray<TArray<TArray<float>>> matrix);
+	virtual void GenerateMesh(TArray<TArray<TArray<float>>> matrix, TArray<TArray<int>> marchInd);
+	virtual void GenerateMeshNoised(TArray<TArray<TArray<float>>> matrix, TArray<TArray<TArray<float>>> perlinMatrix, TArray<TArray<int>> marchInd);
 	void Generate3DHeightMap(TArray<TArray<TArray<float>>> matrix);
 	void Setup();
 	void ApplyMesh(int section) const;
 	void SmoothMatrix(TArray<TArray<TArray<float>>>& matrix);
 	int adjCount(TArray<TArray<TArray<float>>>& matrix, TArray<int> target);
-	void generateStag(TArray<TArray<TArray<float>>>& matrix);
+	
 	void wallJitter(TArray<TArray<TArray<float>>>& matrix);
 	int Noise(int seed);
-	TArray<TArray<float>> PerlinNoise(int seed, int x, int y);
+	TArray<TArray<float>> PerlinNoise2D(int seed, int x, int y);
+	TArray<TArray<TArray<float>>> PerlinNoise3D(int seed, int x, int y, int z);
 
 
 private:
+	// Cellular Automata
+	void generateStag(TArray<TArray<TArray<float>>>& matrix);
+
 	// Perlin Noise
 	unsigned char p[512];
 	float accumulatedNoise2D(float x, float y, int octaves);
+	float accumulatedNoise3D(float x, float y, float z, int octaves);
 	float noise2D(float x, float y);
+	float noise3D(float x, float y, float z);
 
 	// Custom mesh from Perlin Noise
 	void CustomMesh(int seed, int section);
@@ -97,7 +127,8 @@ private:
 	TArray<float> Voxels;
 	int TriangleOrder[3] = { 0, 1, 2 };
 
-	void March(int X, int Y, int Z, const float Cube[8]);
+	void March(int x, int y, int z, const float Cube[8]);
+	void MarchNoised(int x, int y, int z, const float Cube[8], TArray<TArray<TArray<float>>> matrixPerlin);
 	int GetVoxelIndex(int X, int Y, int Z) const;
 	float GetInterpolationOffset(float V1, float V2) const;
 	int getCubeIndex(float Cube[8]);

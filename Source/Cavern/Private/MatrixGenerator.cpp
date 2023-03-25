@@ -10,29 +10,43 @@ TArray<TArray<TArray<float>>> ACavernGenerator::GenerateMatrix()
 		for (int y = 0; y < y_size; y++) {
 			TArray<float> x_breadth;
 			for (int x = 0; x < x_size; x++) {
-				if (z == 0 || x == 0 || x == x_size - 1  || z == z_size - 1) {
-					x_breadth.Add(float(SurfaceLevel - 1));
-				}
-
-				//else if (y == 0 || y == y_size - 1) {
-				//	x_breadth.Add(float(SurfaceLevel + 1));
+				//if (z == 0 || x == 0 || x == x_size - 1  || z == z_size - 1) {
+				//	x_breadth.Add(float(SurfaceLevel - 1));
 				//}
-				else {
-					//float isoVal = float(fabs(rand() % z_size - fabs((z_size/2) - z)) / float((z_size/2) - 0.1));
-					float isoVal = SurfaceLevel + 1;
-					//FString print = FString::SanitizeFloat(isoVal);
-					//UE_LOG(LogTemp, Warning, TEXT("Isoval : %s"), *print);
-					x_breadth.Add(isoVal);
-				}
+
+				////else if (y == 0 || y == y_size - 1) {
+				////	x_breadth.Add(float(SurfaceLevel + 1));
+				////}
+				//else {
+				//	//float isoVal = float(fabs(rand() % z_size - fabs((z_size/2) - z)) / float((z_size/2) - 0.1));
+				//	float isoVal = SurfaceLevel + 1;
+				//	//FString print = FString::SanitizeFloat(isoVal);
+				//	//UE_LOG(LogTemp, Warning, TEXT("Isoval : %s"), *print);
+				//	x_breadth.Add(isoVal);
+				//}
+				x_breadth.Add(1.0f);
 			}
 			y_length.Add(x_breadth);
 		}
 		m_id.Add(y_length);
 	}
 
-	wallJitter(m_id);
+	//wallJitter(m_id);
 	//SmoothMatrix(m_id);
 
+	return m_id;
+}
+
+TArray<TArray<float>> ACavernGenerator::GenerateMatrix2D()
+{
+	TArray<TArray<float>> m_id;
+	for (int y = 0; y < y_size; y++) {
+		TArray<float> m_idy;
+		for (int x = 0; x < x_size; x++) {
+			m_idy.Add(0);
+		}
+		m_id.Add(m_idy);
+	}
 	return m_id;
 }
 
@@ -65,17 +79,17 @@ void ACavernGenerator::ShowDebugGeometry(TArray<TArray<TArray<float>>> matrix)
 		for (int y = 0; y < yInd; y++) {
 			for (int x = 0; x < xInd; x++) {
 				if (matrix[z][y][x] > SurfaceLevel) {
-					DrawDebugBox(GetWorld(), FVector(x * gridSize, y * gridSize, z * gridSize), FVector(5, 5, 5), FColor::Green, true, -1, 0, 2);
-					
+					//DrawDebugSphere(GetWorld(), FVector(x * gridSize, y * gridSize, z * gridSize), 5, 2, FColor::Green, true, -1, 0, 2);
+					//DrawDebugBox(GetWorld(), FVector(x * gridSize, y * gridSize, z * gridSize), FVector(5, 5, 5), FColor::Green, true, -1, 0, 2);
 					FString print = FString::SanitizeFloat(matrix[z][y][x]);
 					//UE_LOG(LogTemp, Warning, TEXT("%s"), *print);
 				}
 
 				else {
-					//DrawDebugSphere(GetWorld(), FVector(x * gridSize, y * gridSize, z * gridSize), 5, 2, FColor::Red, true, -1, 0, 2);
-					DrawDebugBox(GetWorld(), FVector(x * gridSize, y * gridSize, z * gridSize), FVector(5, 5, 5), FColor::Red, true, -1, 0, 2);
+					DrawDebugSphere(GetWorld(), FVector(x * gridSize, y * gridSize, z * gridSize), 5, 2, FColor::Red, true, -1, 0, 2);
+					//DrawDebugBox(GetWorld(), FVector(x * gridSize, y * gridSize, z * gridSize), FVector(5, 5, 5), FColor::Red, true, -1, 0, 2);
 					FString print = FString::SanitizeFloat(matrix[z][y][x]);
-					UE_LOG(LogTemp, Warning, TEXT("%s"), *print);
+					//UE_LOG(LogTemp, Warning, TEXT("%s"), *print);
 				}
 			}
 		}
@@ -132,12 +146,6 @@ int ACavernGenerator::adjCount(TArray<TArray<TArray<float>>>& matrix, TArray<int
 	return count;
 }
 
-void ACavernGenerator::generateStag(TArray<TArray<TArray<float>>>& matrix)
-{
-	int situation = rand() % 2;
-	int randXind = rand() % (x_size - 1) + 1;
-	int randYind = rand() % (y_size - 1) + 1;
-}
 
 void ACavernGenerator::wallJitter(TArray<TArray<TArray<float>>>& matrix)
 {
@@ -153,7 +161,7 @@ void ACavernGenerator::wallJitter(TArray<TArray<TArray<float>>>& matrix)
 	//}
 
 
-	TArray<TArray<float>> matrixPerlin = PerlinNoise(perlinSeed, y_size, z_size - 1);
+	TArray<TArray<float>> matrixPerlin = PerlinNoise2D(perlinSeed, y_size, z_size - 1);
 
 	//FString print = FString::SanitizeFloat(matrixPerlin.Num());
 	//UE_LOG(LogTemp, Warning, TEXT("%s"), *print);
