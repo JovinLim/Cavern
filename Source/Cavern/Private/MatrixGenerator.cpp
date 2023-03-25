@@ -78,7 +78,18 @@ void ACavernGenerator::ShowDebugGeometry(TArray<TArray<TArray<float>>> matrix)
 	for (int z = 0; z < zInd; z++) {
 		for (int y = 0; y < yInd; y++) {
 			for (int x = 0; x < xInd; x++) {
-				if (matrix[z][y][x] > SurfaceLevel) {
+				if (x == 0 || x == xInd-1 ) {
+					if (y == 0 || y == yInd - 1){
+						if (z == 0 || z == zInd - 1) {
+							DrawDebugSphere(GetWorld(), FVector(x * gridSize, y * gridSize, z * gridSize), 5, 2, FColor::Green, true, -1, 0, 2);
+						}
+					}
+					//DrawDebugBox(GetWorld(), FVector(x * gridSize, y * gridSize, z * gridSize), FVector(5, 5, 5), FColor::Green, true, -1, 0, 2);
+					FString print = FString::SanitizeFloat(matrix[z][y][x]);
+					//UE_LOG(LogTemp, Warning, TEXT("%s"), *print);
+				}
+
+				else if (matrix[z][y][x] > SurfaceLevel) {
 					//DrawDebugSphere(GetWorld(), FVector(x * gridSize, y * gridSize, z * gridSize), 5, 2, FColor::Green, true, -1, 0, 2);
 					//DrawDebugBox(GetWorld(), FVector(x * gridSize, y * gridSize, z * gridSize), FVector(5, 5, 5), FColor::Green, true, -1, 0, 2);
 					FString print = FString::SanitizeFloat(matrix[z][y][x]);
@@ -86,7 +97,7 @@ void ACavernGenerator::ShowDebugGeometry(TArray<TArray<TArray<float>>> matrix)
 				}
 
 				else {
-					DrawDebugSphere(GetWorld(), FVector(x * gridSize, y * gridSize, z * gridSize), 5, 2, FColor::Red, true, -1, 0, 2);
+					//DrawDebugSphere(GetWorld(), FVector(x * gridSize, y * gridSize, z * gridSize), 5, 2, FColor::Red, true, -1, 0, 2);
 					//DrawDebugBox(GetWorld(), FVector(x * gridSize, y * gridSize, z * gridSize), FVector(5, 5, 5), FColor::Red, true, -1, 0, 2);
 					FString print = FString::SanitizeFloat(matrix[z][y][x]);
 					//UE_LOG(LogTemp, Warning, TEXT("%s"), *print);

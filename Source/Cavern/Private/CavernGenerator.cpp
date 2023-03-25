@@ -8,6 +8,21 @@
 #include "Utils/VoxelMeshData.h"
 #include "ProceduralMeshComponent.h"
 
+template <typename ObjClass>
+static FORCEINLINE ObjClass* LoadObjFromPath(const FName& Path)
+{
+	if (Path == NAME_None) return nullptr;
+
+	return Cast<ObjClass>(StaticLoadObject(ObjClass::StaticClass(), nullptr, *Path.ToString()));
+}
+
+static FORCEINLINE UMaterial* LoadMaterialFromPath(const FName& Path)
+{
+	if (Path == NAME_None) return nullptr;
+
+	return LoadObjFromPath<UMaterial>(Path);
+}
+
 // Sets default values
 ACavernGenerator::ACavernGenerator()
 {
@@ -27,7 +42,10 @@ ACavernGenerator::ACavernGenerator()
 void ACavernGenerator::BeginPlay()
 {
 	Super::BeginPlay();
-	//TArray<TArray<TArray<float>>> matrix = GenerateMatrix();
+
+	// Get material
+
+	TArray<TArray<TArray<float>>> matrix = GenerateMatrix();
 	//PrintMatrix(matrix[0]);
 	
 	//PERLIN STUFF
@@ -36,7 +54,7 @@ void ACavernGenerator::BeginPlay()
 
 
 	//DEBUGGING POINTS
-	//ShowDebugGeometry(matrix);
+	ShowDebugGeometry(matrix);
 	 
 
 	//MAKE MESH
@@ -376,11 +394,11 @@ void ACavernGenerator::CustomMesh(int seed, int section)
 	srand(seed);
 	for (int i = 0; i < 4; i++) {
 		if (i == 0 || i == 1) {
-			TArray<TArray<float>> matrixPerlin = PerlinNoise2D(rand(), z_size * 1.5, y_size);
+			TArray<TArray<float>> matrixPerlin = PerlinNoise2D(rand(), y_size, z_size);
 			CreateSurfaceMatrix(matrixPerlin, i);
 		}
 		else if (i == 2 || i == 3) {
-			TArray<TArray<float>> matrixPerlin = PerlinNoise2D(rand(), x_size * 1.5, y_size);
+			TArray<TArray<float>> matrixPerlin = PerlinNoise2D(rand(), x_size, y_size);
 			CreateSurfaceMatrix(matrixPerlin, i);
 		}
 
@@ -393,7 +411,7 @@ void ACavernGenerator::CreateSurfaceMatrix(TArray<TArray<float>>& matrix, int ty
 {
 	int matrixLen = matrix.Num();
 	int matrixBreadth = matrix[0].Num();
-	int smallestVal = 200;
+	int smallestVal = 500;
 	for (int y = 0; y < matrixLen; y++) {
 		for (int x = 0; x < matrixBreadth; x++) {
 			if (matrix[y][x] <= smallestVal) {
@@ -404,8 +422,8 @@ void ACavernGenerator::CreateSurfaceMatrix(TArray<TArray<float>>& matrix, int ty
 
 	// Types 0 - Left wall, 1 - Right wall, 2 - Ceiling, 3 - Ground
 	if (type == 0) {
-		for (int y = 1; y < y_size - 1; y++) {
-			for (int z = 1; z < (z_size * 1.5) - 1; z++) {
+		for (int z = 1; z < matrix.Num() - 1; z++) {
+			for (int y = 1; y < matrix[0].Num() - 1; y++) {
 				FVector V1 = FVector(matrix[z][y] - smallestVal, float(y * gridSize), float(z * gridSize));
 				FVector V2 = FVector(matrix[z][y + 1] - smallestVal, float((y + 1) * gridSize), float(z * gridSize));
 				FVector V3 = FVector(matrix[z + 1][y] - smallestVal, float(y * gridSize), float((z + 1) * gridSize));
@@ -467,8 +485,8 @@ void ACavernGenerator::CreateSurfaceMatrix(TArray<TArray<float>>& matrix, int ty
 		}
 	}
 	else if (type == 1) {
-		for (int y = 1; y < y_size - 1; y++) {
-			for (int z = 1; z < (z_size * 1.5) - 1; z++) {
+		for (int z = 1; z < matrix.Num() - 1; z++) {
+			for (int y = 1; y < matrix[0].Num() - 1; y++) {
 				FVector V1 = FVector(matrix[z][y] + (x_size * gridSize) - smallestVal, float(y * gridSize), float(z * gridSize));
 				FVector V2 = FVector(matrix[z][y + 1] + (x_size * gridSize) - smallestVal, float((y + 1) * gridSize), float(z * gridSize));
 				FVector V3 = FVector(matrix[z + 1][y] + (x_size * gridSize) - smallestVal, float(y * gridSize), float((z + 1) * gridSize));
@@ -531,8 +549,8 @@ void ACavernGenerator::CreateSurfaceMatrix(TArray<TArray<float>>& matrix, int ty
 	}
 
 	else if (type == 2) {
-		for (int y = 1; y < y_size - 1; y++) {
-			for (int x = 1; x < (x_size*1.5) - 1; x++) {
+		for (int y = 1; y < matrix.Num() - 1; y++) {
+			for (int x = 1; x < matrix[0].Num() - 1; x++) {
 				FVector V1 = FVector(float(x * gridSize), float(y * gridSize), matrix[y][x] + float(z_size * gridSize) - smallestVal);
 				FVector V2 = FVector(float(x * gridSize), float((y + 1) * gridSize), matrix[y+1][x] + float(z_size * gridSize) - smallestVal);
 				FVector V3 = FVector(float((x+1)*gridSize), float(y * gridSize), matrix[y][x+1] + float((z_size) * gridSize) - smallestVal);
@@ -595,8 +613,8 @@ void ACavernGenerator::CreateSurfaceMatrix(TArray<TArray<float>>& matrix, int ty
 	}
 
 	else if (type == 3) {
-		for (int y = 1; y < y_size - 1; y++) {
-			for (int x = 1; x < (x_size * 1.5) - 1; x++) {
+		for (int y = 1; y < matrix.Num() - 1; y++) {
+			for (int x = 1; x < matrix[0].Num() - 1; x++) {
 				FVector V1 = FVector(float(x * gridSize), float(y * gridSize), matrix[y][x] - smallestVal);
 				FVector V2 = FVector(float(x * gridSize), float((y + 1) * gridSize), matrix[y + 1][x] - smallestVal);
 				FVector V3 = FVector(float((x + 1) * gridSize), float(y * gridSize), matrix[y][x + 1] - smallestVal);
@@ -662,7 +680,14 @@ void ACavernGenerator::CreateSurfaceMatrix(TArray<TArray<float>>& matrix, int ty
 
 void ACavernGenerator::ApplyMesh(int section) const
 {
-	Mesh->SetMaterial(0, Material);
+	FString sPath = "/Script/Engine.Material'/Game/StarterContent/Materials/M_Concrete_Grime_Scaleable.M_Concrete_Grime_Scaleable'";
+	UMaterial* mat = LoadMaterialFromPath(FName(*sPath));
+	Mesh->SetMaterial(0, mat);
+
+	//Check if mesh is double sided; 0 or 1;
+	//FString print = FString::FromInt(Mesh->GetBodySetup()->bDoubleSidedGeometry);
+	//UE_LOG(LogTemp, Warning, TEXT("%s"), *print);
+
 	Mesh->CreateMeshSection_LinearColor(
 		section,
 		MeshData.Vertices,
@@ -674,5 +699,4 @@ void ACavernGenerator::ApplyMesh(int section) const
 		true
 	);
 }
-
 

@@ -64,6 +64,7 @@ public:
 
 	int VertexCount = 0;
 	TObjectPtr<UProceduralMeshComponent> Mesh;
+	//UBodySetup* BodySetUp;
 	TObjectPtr<UMaterialInterface> Material;
 	FVoxelMeshData MeshData;
 
