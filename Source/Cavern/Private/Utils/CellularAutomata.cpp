@@ -12,6 +12,8 @@ void ACavernGenerator::generateStag(TArray<TArray<TArray<float>>>& matrix)
 	srand(CASeed);
 
 	// Calculating maximum number of points that can be occupied
+	
+	// CA method
 	int stagMaxPt = (x_size * y_size * (100 - EmptySpace)) / 100;
 	int stagPtCount = 0;
 	int stagCount = 0;

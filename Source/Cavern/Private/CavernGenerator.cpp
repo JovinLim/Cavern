@@ -54,7 +54,7 @@ void ACavernGenerator::BeginPlay()
 
 
 	//DEBUGGING POINTS
-	ShowDebugGeometry(matrix);
+	//ShowDebugGeometry(matrix);
 	 
 
 	//MAKE MESH
@@ -66,7 +66,8 @@ void ACavernGenerator::BeginPlay()
 
 	//CUSTOM MESH
 	CustomMesh(perlinSeed , 1);
-	ApplyMesh(0);
+	GenPerlinStag(matrix);
+	//ApplyMesh(0);
 
 	//TEST STAG GENERATION
 	//TArray<TArray<float>> matrix = GenerateMatrix2D();
@@ -394,12 +395,12 @@ void ACavernGenerator::CustomMesh(int seed, int section)
 	srand(seed);
 	for (int i = 0; i < 4; i++) {
 		if (i == 0 || i == 1) {
-			TArray<TArray<float>> matrixPerlin = PerlinNoise2D(rand(), y_size, z_size);
-			CreateSurfaceMatrix(matrixPerlin, i);
+			TArray<TArray<float>> matrixPerlin = PerlinNoise2D(rand(), Py, Pz, WallNoiseOffset, 0);
+			CreateSurfaceMatrix(matrixPerlin, i, 0);
 		}
 		else if (i == 2 || i == 3) {
-			TArray<TArray<float>> matrixPerlin = PerlinNoise2D(rand(), x_size, y_size);
-			CreateSurfaceMatrix(matrixPerlin, i);
+			TArray<TArray<float>> matrixPerlin = PerlinNoise2D(rand(), Px, Py, WallNoiseOffset, 0);
+			CreateSurfaceMatrix(matrixPerlin, i, 0);
 		}
 
 	}
@@ -407,27 +408,31 @@ void ACavernGenerator::CustomMesh(int seed, int section)
 	UE_LOG(LogTemp, Warning, TEXT("Mesh set"));
 }
 
-void ACavernGenerator::CreateSurfaceMatrix(TArray<TArray<float>>& matrix, int type)
+void ACavernGenerator::CreateSurfaceMatrix(TArray<TArray<float>>& matrix, int type, int section)
 {
 	int matrixLen = matrix.Num();
 	int matrixBreadth = matrix[0].Num();
 	int smallestVal = 500;
+	int largestVal = 0;
 	for (int y = 0; y < matrixLen; y++) {
 		for (int x = 0; x < matrixBreadth; x++) {
 			if (matrix[y][x] <= smallestVal) {
 				smallestVal = matrix[y][x];
 			}
+			if (matrix[y][x] >= largestVal) {
+				largestVal = matrix[y][x];
+			}
 		}
 	}
 
-	// Types 0 - Left wall, 1 - Right wall, 2 - Ceiling, 3 - Ground
+	// Types 0 - Right wall, 1 - Left wall, 2 - Ceiling, 3 - Ground, 4 - Stag
 	if (type == 0) {
-		for (int z = 1; z < matrix.Num() - 1; z++) {
-			for (int y = 1; y < matrix[0].Num() - 1; y++) {
-				FVector V1 = FVector(matrix[z][y] - smallestVal, float(y * gridSize), float(z * gridSize));
-				FVector V2 = FVector(matrix[z][y + 1] - smallestVal, float((y + 1) * gridSize), float(z * gridSize));
-				FVector V3 = FVector(matrix[z + 1][y] - smallestVal, float(y * gridSize), float((z + 1) * gridSize));
-				FVector V4 = FVector(matrix[z + 1][y + 1] - smallestVal, float((y + 1) * gridSize), float((z + 1) * gridSize));
+		for (int z = 0; z < matrix.Num() - 1; z++) {
+			for (int y = 0; y < matrix[0].Num() - 1; y++) {
+				FVector V1 = FVector(matrix[z][y], float(y * Pgrid), float(z * Pgrid));
+				FVector V2 = FVector(matrix[z][y + 1], float((y + 1) * Pgrid), float(z * Pgrid));
+				FVector V3 = FVector(matrix[z + 1][y], float(y * Pgrid), float((z + 1) * Pgrid));
+				FVector V4 = FVector(matrix[z + 1][y + 1], float((y + 1) * Pgrid), float((z + 1) * Pgrid));
 
 				auto Normal = FVector::CrossProduct(V4 - V1, V3 - V1);
 				auto Normal2 = FVector::CrossProduct(V1 - V4, V2 - V4);
@@ -438,9 +443,9 @@ void ACavernGenerator::CreateSurfaceMatrix(TArray<TArray<float>>& matrix, int ty
 
 				MeshData.Vertices.Append({ V1, V3, V4 });
 				MeshData.UV0.Append({
-					FVector2D(float(y * gridSize) / PerlinUVScale, float(z * gridSize) / PerlinUVScale),
-					FVector2D(float(y * gridSize) / PerlinUVScale, float((z + 1) * gridSize) / PerlinUVScale),
-					FVector2D(float((y + 1) * gridSize) / PerlinUVScale, float((z + 1) * gridSize) / PerlinUVScale),
+					FVector2D(float(y * Pgrid) / PerlinUVScale, float(z * Pgrid) / PerlinUVScale),
+					FVector2D(float(y * Pgrid) / PerlinUVScale, float((z + 1) * Pgrid) / PerlinUVScale),
+					FVector2D(float((y + 1) * Pgrid) / PerlinUVScale, float((z + 1) * Pgrid) / PerlinUVScale),
 					});
 				MeshData.Triangles.Append({
 					VertexCount + 0,
@@ -461,9 +466,9 @@ void ACavernGenerator::CreateSurfaceMatrix(TArray<TArray<float>>& matrix, int ty
 
 				MeshData.Vertices.Append({ V4, V2, V1 });
 				MeshData.UV0.Append({
-					FVector2D(float((y + 1) * gridSize) / PerlinUVScale, float((z + 1) * gridSize) / PerlinUVScale),
-					FVector2D(float((y + 1) * gridSize) / PerlinUVScale, float(z * gridSize) / PerlinUVScale),
-					FVector2D(float(y * gridSize) / PerlinUVScale, float(z * gridSize) / PerlinUVScale),
+					FVector2D(float((y + 1) * Pgrid) / PerlinUVScale, float((z + 1) * Pgrid) / PerlinUVScale),
+					FVector2D(float((y + 1) * Pgrid) / PerlinUVScale, float(z * Pgrid) / PerlinUVScale),
+					FVector2D(float(y * Pgrid) / PerlinUVScale, float(z * Pgrid) / PerlinUVScale),
 					});
 				MeshData.Triangles.Append({
 					VertexCount + 0,
@@ -485,12 +490,12 @@ void ACavernGenerator::CreateSurfaceMatrix(TArray<TArray<float>>& matrix, int ty
 		}
 	}
 	else if (type == 1) {
-		for (int z = 1; z < matrix.Num() - 1; z++) {
-			for (int y = 1; y < matrix[0].Num() - 1; y++) {
-				FVector V1 = FVector(matrix[z][y] + (x_size * gridSize) - smallestVal, float(y * gridSize), float(z * gridSize));
-				FVector V2 = FVector(matrix[z][y + 1] + (x_size * gridSize) - smallestVal, float((y + 1) * gridSize), float(z * gridSize));
-				FVector V3 = FVector(matrix[z + 1][y] + (x_size * gridSize) - smallestVal, float(y * gridSize), float((z + 1) * gridSize));
-				FVector V4 = FVector(matrix[z + 1][y + 1] + (x_size * gridSize) - smallestVal, float((y + 1) * gridSize), float((z + 1) * gridSize));
+		for (int z = 0; z < matrix.Num() - 1; z++) {
+			for (int y = 0; y < matrix[0].Num() - 1; y++) {
+				FVector V1 = FVector(matrix[z][y] + ((Px - (gridSize / Pgrid)) * Pgrid), float(y * Pgrid), float(z * Pgrid));
+				FVector V2 = FVector(matrix[z][y + 1] + ((Px - (gridSize / Pgrid)) * Pgrid), float((y + 1) * Pgrid), float(z * Pgrid));
+				FVector V3 = FVector(matrix[z + 1][y] + ((Px - (gridSize / Pgrid)) * Pgrid), float(y * Pgrid), float((z + 1) * Pgrid));
+				FVector V4 = FVector(matrix[z + 1][y + 1] + ((Px - (gridSize / Pgrid)) * Pgrid), float((y + 1) * Pgrid), float((z + 1) * Pgrid));
 
 				auto Normal = FVector::CrossProduct(V3 - V1, V4 - V1);
 				auto Normal2 = FVector::CrossProduct(V2 - V4, V1 - V4);
@@ -501,9 +506,9 @@ void ACavernGenerator::CreateSurfaceMatrix(TArray<TArray<float>>& matrix, int ty
 
 				MeshData.Vertices.Append({ V4, V3, V1 });
 				MeshData.UV0.Append({
-					FVector2D(float((y + 1) * gridSize) / PerlinUVScale, float((z + 1) * gridSize) / PerlinUVScale),
-					FVector2D(float(y * gridSize) / PerlinUVScale, float((z + 1) * gridSize) / PerlinUVScale),
-					FVector2D(float(y * gridSize) / PerlinUVScale, float(z * gridSize) / PerlinUVScale),
+					FVector2D(float((y + 1) * Pgrid) / PerlinUVScale, float((z + 1) * Pgrid) / PerlinUVScale),
+					FVector2D(float(y * Pgrid) / PerlinUVScale, float((z + 1) * Pgrid) / PerlinUVScale),
+					FVector2D(float(y * Pgrid) / PerlinUVScale, float(z * Pgrid) / PerlinUVScale),
 					});
 				MeshData.Triangles.Append({
 					VertexCount + 0,
@@ -524,9 +529,9 @@ void ACavernGenerator::CreateSurfaceMatrix(TArray<TArray<float>>& matrix, int ty
 
 				MeshData.Vertices.Append({ V1, V2, V4 });
 				MeshData.UV0.Append({
-					FVector2D(float(y * gridSize) / PerlinUVScale, float(z * gridSize) / PerlinUVScale),
-					FVector2D(float((y + 1) * gridSize) / PerlinUVScale, float(z * gridSize) / PerlinUVScale),
-					FVector2D(float((y + 1)* gridSize) / PerlinUVScale, float((z + 1)* gridSize) / PerlinUVScale),
+					FVector2D(float(y * Pgrid) / PerlinUVScale, float(z * Pgrid) / PerlinUVScale),
+					FVector2D(float((y + 1) * Pgrid) / PerlinUVScale, float(z * Pgrid) / PerlinUVScale),
+					FVector2D(float((y + 1)* Pgrid) / PerlinUVScale, float((z + 1)* Pgrid) / PerlinUVScale),
 					});
 				MeshData.Triangles.Append({
 					VertexCount + 0,
@@ -549,12 +554,12 @@ void ACavernGenerator::CreateSurfaceMatrix(TArray<TArray<float>>& matrix, int ty
 	}
 
 	else if (type == 2) {
-		for (int y = 1; y < matrix.Num() - 1; y++) {
-			for (int x = 1; x < matrix[0].Num() - 1; x++) {
-				FVector V1 = FVector(float(x * gridSize), float(y * gridSize), matrix[y][x] + float(z_size * gridSize) - smallestVal);
-				FVector V2 = FVector(float(x * gridSize), float((y + 1) * gridSize), matrix[y+1][x] + float(z_size * gridSize) - smallestVal);
-				FVector V3 = FVector(float((x+1)*gridSize), float(y * gridSize), matrix[y][x+1] + float((z_size) * gridSize) - smallestVal);
-				FVector V4 = FVector(float((x+1) * gridSize), float((y + 1) * gridSize), matrix[y + 1][x + 1] + float((z_size) * gridSize) - smallestVal);
+		for (int y = 0; y < matrix.Num() - 1; y++) {
+			for (int x = 0; x < matrix[0].Num() - 1; x++) {
+				FVector V1 = FVector(float(x * Pgrid), float(y * Pgrid), matrix[y][x] + float((Pz - (gridSize / Pgrid)) * Pgrid));
+				FVector V2 = FVector(float(x * Pgrid), float((y + 1) * Pgrid), matrix[y+1][x] + float((Pz - (gridSize / Pgrid)) * Pgrid));
+				FVector V3 = FVector(float((x+1)* Pgrid), float(y * Pgrid), matrix[y][x+1] + float((Pz - (gridSize / Pgrid)) *Pgrid));
+				FVector V4 = FVector(float((x+1) * Pgrid), float((y + 1) * Pgrid), matrix[y + 1][x + 1] + float((Pz - (gridSize / Pgrid)) * Pgrid));
 
 				auto Normal = FVector::CrossProduct(V3 - V1, V4 - V1);
 				auto Normal2 = FVector::CrossProduct(V2 - V4, V1 - V4);
@@ -565,9 +570,9 @@ void ACavernGenerator::CreateSurfaceMatrix(TArray<TArray<float>>& matrix, int ty
 
 				MeshData.Vertices.Append({ V1, V3, V4 });
 				MeshData.UV0.Append({
-					FVector2D(float(x * gridSize) / PerlinUVScale, float(y * gridSize) / PerlinUVScale),
-					FVector2D(float((x+1) * gridSize) / PerlinUVScale, float(y * gridSize) / PerlinUVScale),
-					FVector2D(float((x + 1) * gridSize) / PerlinUVScale, float((y + 1) * gridSize) / PerlinUVScale),
+					FVector2D(float(x * Pgrid) / PerlinUVScale, float(y * Pgrid) / PerlinUVScale),
+					FVector2D(float((x+1) * Pgrid) / PerlinUVScale, float(y * Pgrid) / PerlinUVScale),
+					FVector2D(float((x + 1) * Pgrid) / PerlinUVScale, float((y + 1) * Pgrid) / PerlinUVScale),
 					});
 				MeshData.Triangles.Append({
 					VertexCount + 0,
@@ -588,9 +593,9 @@ void ACavernGenerator::CreateSurfaceMatrix(TArray<TArray<float>>& matrix, int ty
 
 				MeshData.Vertices.Append({ V4, V2, V1 });
 				MeshData.UV0.Append({
-					FVector2D(float((x + 1) * gridSize) / PerlinUVScale, float((y + 1) * gridSize) / PerlinUVScale),
-					FVector2D(float(x * gridSize) / PerlinUVScale, float((y + 1) * gridSize) / PerlinUVScale),
-					FVector2D(float(x * gridSize) / PerlinUVScale, float(y * gridSize) / PerlinUVScale),
+					FVector2D(float((x + 1) * Pgrid) / PerlinUVScale, float((y + 1) * Pgrid) / PerlinUVScale),
+					FVector2D(float(x * Pgrid) / PerlinUVScale, float((y + 1) * Pgrid) / PerlinUVScale),
+					FVector2D(float(x * Pgrid) / PerlinUVScale, float(y * Pgrid) / PerlinUVScale),
 					});
 				MeshData.Triangles.Append({
 					VertexCount + 0,
@@ -613,12 +618,12 @@ void ACavernGenerator::CreateSurfaceMatrix(TArray<TArray<float>>& matrix, int ty
 	}
 
 	else if (type == 3) {
-		for (int y = 1; y < matrix.Num() - 1; y++) {
-			for (int x = 1; x < matrix[0].Num() - 1; x++) {
-				FVector V1 = FVector(float(x * gridSize), float(y * gridSize), matrix[y][x] - smallestVal);
-				FVector V2 = FVector(float(x * gridSize), float((y + 1) * gridSize), matrix[y + 1][x] - smallestVal);
-				FVector V3 = FVector(float((x + 1) * gridSize), float(y * gridSize), matrix[y][x + 1] - smallestVal);
-				FVector V4 = FVector(float((x + 1) * gridSize), float((y + 1) * gridSize), matrix[y + 1][x + 1] - smallestVal);
+		for (int y = 0; y < matrix.Num() - 1; y++) {
+			for (int x = 0; x < matrix[0].Num() - 1; x++) {
+				FVector V1 = FVector(float(x * Pgrid), float(y * Pgrid), matrix[y][x] );
+				FVector V2 = FVector(float(x * Pgrid), float((y + 1) * Pgrid), matrix[y + 1][x] );
+				FVector V3 = FVector(float((x + 1) * Pgrid), float(y * Pgrid), matrix[y][x + 1] );
+				FVector V4 = FVector(float((x + 1) * Pgrid), float((y + 1) * Pgrid), matrix[y + 1][x + 1] );
 
 				auto Normal = FVector::CrossProduct(V3 - V1, V4 - V1);
 				auto Normal2 = FVector::CrossProduct(V2 - V4, V1 - V4);
@@ -629,9 +634,9 @@ void ACavernGenerator::CreateSurfaceMatrix(TArray<TArray<float>>& matrix, int ty
 
 				MeshData.Vertices.Append({ V4, V3, V1 });
 				MeshData.UV0.Append({
-					FVector2D(float((x+1) * gridSize) / PerlinUVScale, float((y+1) * gridSize) / PerlinUVScale),
-					FVector2D(float((x+1) * gridSize) / PerlinUVScale, float(y * gridSize) / PerlinUVScale),
-					FVector2D(float(x * gridSize) / PerlinUVScale, float(y * gridSize) / PerlinUVScale),
+					FVector2D(float((x+1) * Pgrid) / PerlinUVScale, float((y+1) * Pgrid) / PerlinUVScale),
+					FVector2D(float((x+1) * Pgrid) / PerlinUVScale, float(y * Pgrid) / PerlinUVScale),
+					FVector2D(float(x * Pgrid) / PerlinUVScale, float(y * Pgrid) / PerlinUVScale),
 					});
 				MeshData.Triangles.Append({
 					VertexCount + 0,
@@ -652,9 +657,9 @@ void ACavernGenerator::CreateSurfaceMatrix(TArray<TArray<float>>& matrix, int ty
 
 				MeshData.Vertices.Append({ V1, V2, V4 });
 				MeshData.UV0.Append({
-					FVector2D(float(x * gridSize) / PerlinUVScale, float(y * gridSize) / PerlinUVScale),
-					FVector2D(float(x * gridSize) / PerlinUVScale, float((y+1) * gridSize) / PerlinUVScale),
-					FVector2D(float((x+1) * gridSize) / PerlinUVScale, float((y+1) * gridSize) / PerlinUVScale),
+					FVector2D(float(x * Pgrid) / PerlinUVScale, float(y * Pgrid) / PerlinUVScale),
+					FVector2D(float(x * Pgrid) / PerlinUVScale, float((y+1) * Pgrid) / PerlinUVScale),
+					FVector2D(float((x+1) * Pgrid) / PerlinUVScale, float((y+1) * Pgrid) / PerlinUVScale),
 					});
 				MeshData.Triangles.Append({
 					VertexCount + 0,
@@ -676,10 +681,165 @@ void ACavernGenerator::CreateSurfaceMatrix(TArray<TArray<float>>& matrix, int ty
 		}
 	}
 
+	else if (type == 4) {
+		for (int y = 0; y < matrix.Num() - 1; y++) {
+			for (int x = 0; x < matrix[0].Num() - 1; x++) {
+				FVector V1 = FVector(float(x * Pgrid), float(y * Pgrid), matrix[y][x] - smallestVal);
+				FVector V2 = FVector(float(x * Pgrid), float((y + 1) * Pgrid), matrix[y + 1][x] - smallestVal);
+				FVector V3 = FVector(float((x + 1) * Pgrid), float(y * Pgrid), matrix[y][x + 1] - smallestVal);
+				FVector V4 = FVector(float((x + 1) * Pgrid), float((y + 1) * Pgrid), matrix[y + 1][x + 1] - smallestVal);
+
+				auto Normal = FVector::CrossProduct(V3 - V1, V4 - V1);
+				auto Normal2 = FVector::CrossProduct(V2 - V4, V1 - V4);
+				auto Color = FLinearColor::MakeRandomColor();
+
+				Normal.Normalize();
+				Normal2.Normalize();
+
+				MeshData.Vertices.Append({ V4, V3, V1 });
+				MeshData.UV0.Append({
+					FVector2D(float((x + 1) * Pgrid) / PerlinUVScale, float((y + 1) * Pgrid) / PerlinUVScale),
+					FVector2D(float((x + 1) * Pgrid) / PerlinUVScale, float(y * Pgrid) / PerlinUVScale),
+					FVector2D(float(x * Pgrid) / PerlinUVScale, float(y * Pgrid) / PerlinUVScale),
+					});
+				MeshData.Triangles.Append({
+					VertexCount + 0,
+					VertexCount + 1,
+					VertexCount + 2,
+					});
+				MeshData.Normals.Append({
+					Normal,
+					Normal,
+					Normal
+					});
+				MeshData.Colors.Append({
+					Color,
+					Color,
+					Color
+					});
+				VertexCount += 3;
+
+				MeshData.Vertices.Append({ V1, V2, V4 });
+				MeshData.UV0.Append({
+					FVector2D(float(x * Pgrid) / PerlinUVScale, float(y * Pgrid) / PerlinUVScale),
+					FVector2D(float(x * Pgrid) / PerlinUVScale, float((y + 1) * Pgrid) / PerlinUVScale),
+					FVector2D(float((x + 1) * Pgrid) / PerlinUVScale, float((y + 1) * Pgrid) / PerlinUVScale),
+					});
+				MeshData.Triangles.Append({
+					VertexCount + 0,
+					VertexCount + 1,
+					VertexCount + 2,
+					});
+				MeshData.Normals.Append({
+					Normal2,
+					Normal2,
+					Normal2
+					});
+				MeshData.Colors.Append({
+					Color,
+					Color,
+					Color
+					});
+				VertexCount += 3;
+			}
+		}
+	}
+
+	ApplyMesh(section);
+}
+
+void ACavernGenerator::GenPerlinStag(TArray<TArray<TArray<float>>>& matrix)
+{
+	// Setting random seed
+	srand(stagSeed);
+
+	// Calculate max grid cells occupied by stags on ground
+	int maxStagGrid = (x_size - 1) * (y_size - 1) * float((100.0 - EmptySpace) / 100.0);
+	//FString print2 = FString::FromInt(maxStagGrid);
+	//UE_LOG(LogTemp, Warning, TEXT("max number of grids : %s"), *print2);
+
+	// Making copy of ground matrix points to check against; prevent duplicate points from being chosen
+	// 0 - Empty space, 1 - Chosen for stag (unmerged), 2 - Merged for stag
+	TArray<TArray<float>> matrixCheck;
+	for (int y = 0; y < matrix[0].Num() - 1; y++) {
+		TArray<float> matrixChecky;
+		for (int x = 0; x < matrix[0][0].Num() - 1; x++) {
+			matrixChecky.Add(0);
+		}
+		matrixCheck.Add(matrixChecky);
+	}
+
+	// Set variable to check stag grid cell count
+	int stagGridCount = 0;
+
+	while (stagGridCount < maxStagGrid) {
+
+		// Check if grid cell has already been chosen
+		int randXind = rand() % (x_size - 1);
+		int randYind = rand() % (y_size - 1);
+		int randSize = rand() % 3 + 1;
+		if (matrixCheck[randYind][randXind] == 1) {
+			continue;
+		}
+
+		// Pick grid cells on z = 0
+		else {
+			if (randYind + randSize > (y_size - 1) || randXind + randSize > (x_size - 1)) {
+				continue;
+			}
+			else {
+				TArray<TArray<float>> srfMatrix;
+				for (int y = 0; y < randSize; y++) {
+					for (int x = 0; x < randSize; x++) {
+						matrixCheck[randYind + y][randXind + x] = 1;
+					}
+				}
+
+				TArray<TArray<float>> matrixPerlin = PerlinNoise2D(rand(), ((gridSize / Pgrid) * randSize), ((gridSize / Pgrid) * randSize), StagNoiseOffset, 1);
+				for (int y = 0; y < ((gridSize / Pgrid) * randSize); y++) {
+					TArray<float> srfMatrixY;
+					for (int x = 0; x < ((gridSize / Pgrid) * randSize); x++) {
+						if (y == 0 || x == 0 || y == ((gridSize / Pgrid) * randSize) - 1 || x == ((gridSize / Pgrid) * randSize) - 1) {
+							srfMatrixY.Add(0);
+						}
+						else {
+							srfMatrixY.Add(matrixPerlin[y][x]);
+						}
+					}
+					srfMatrix.Add(srfMatrixY);
+				}
+				CreateSurfaceMatrix(matrixPerlin, 4, 1);
+
+			}
+
+			stagGridCount += randSize*randSize;
+		}
+	}
+
+	PrintMatrix(matrixCheck);
+
+	//FString print = FString::FromInt(stagGridCount);
+	//UE_LOG(LogTemp, Warning, TEXT("%s"), *print);
+
+	// Form stags on chosen grid cells
+	for (int y = 0; y < matrixCheck.Num(); y++) {
+		for (int x = 0; x < matrixCheck[0].Num(); x++) {
+			if (matrixCheck[y][x] == 2 || matrixCheck[y][x] == 0) {
+				continue;
+			}
+			else {
+
+			}
+		}
+
+	}
 }
 
 void ACavernGenerator::ApplyMesh(int section) const
 {
+	// Section guide
+	// 0 - Main room meshes, 1 - stag meshes
+
 	FString sPath = "/Script/Engine.Material'/Game/StarterContent/Materials/M_Concrete_Grime_Scaleable.M_Concrete_Grime_Scaleable'";
 	UMaterial* mat = LoadMaterialFromPath(FName(*sPath));
 	Mesh->SetMaterial(0, mat);

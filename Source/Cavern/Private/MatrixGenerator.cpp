@@ -78,26 +78,28 @@ void ACavernGenerator::ShowDebugGeometry(TArray<TArray<TArray<float>>> matrix)
 	for (int z = 0; z < zInd; z++) {
 		for (int y = 0; y < yInd; y++) {
 			for (int x = 0; x < xInd; x++) {
-				if (x == 0 || x == xInd-1 ) {
-					if (y == 0 || y == yInd - 1){
-						if (z == 0 || z == zInd - 1) {
-							DrawDebugSphere(GetWorld(), FVector(x * gridSize, y * gridSize, z * gridSize), 5, 2, FColor::Green, true, -1, 0, 2);
-						}
-					}
-					//DrawDebugBox(GetWorld(), FVector(x * gridSize, y * gridSize, z * gridSize), FVector(5, 5, 5), FColor::Green, true, -1, 0, 2);
-					FString print = FString::SanitizeFloat(matrix[z][y][x]);
-					//UE_LOG(LogTemp, Warning, TEXT("%s"), *print);
-				}
+				//if (x == 0 || x == xInd-1 ) {
+				//	if (y == 0 || y == yInd - 1){
+				//		if (z == 0 || z == zInd - 1) {
+				//			DrawDebugSphere(GetWorld(), FVector(x * gridSize, y * gridSize, z * gridSize), 5, 2, FColor::Green, true, -1, 0, 2);
+				//			FString print = FString::SanitizeFloat(x);
+				//			UE_LOG(LogTemp, Warning, TEXT("%s"), *print);
+				//		}
+				//	}
+				//	//DrawDebugBox(GetWorld(), FVector(x * gridSize, y * gridSize, z * gridSize), FVector(5, 5, 5), FColor::Green, true, -1, 0, 2);
+				//	FString print = FString::SanitizeFloat(matrix[z][y][x]);
+				//	//UE_LOG(LogTemp, Warning, TEXT("%s"), *print);
+				//}
 
-				else if (matrix[z][y][x] > SurfaceLevel) {
-					//DrawDebugSphere(GetWorld(), FVector(x * gridSize, y * gridSize, z * gridSize), 5, 2, FColor::Green, true, -1, 0, 2);
+				if (matrix[z][y][x] > SurfaceLevel) {
+					DrawDebugSphere(GetWorld(), FVector(x * gridSize, y * gridSize, z * gridSize), 5, 2, FColor::Green, true, -1, 0, 2);
 					//DrawDebugBox(GetWorld(), FVector(x * gridSize, y * gridSize, z * gridSize), FVector(5, 5, 5), FColor::Green, true, -1, 0, 2);
 					FString print = FString::SanitizeFloat(matrix[z][y][x]);
 					//UE_LOG(LogTemp, Warning, TEXT("%s"), *print);
 				}
 
 				else {
-					//DrawDebugSphere(GetWorld(), FVector(x * gridSize, y * gridSize, z * gridSize), 5, 2, FColor::Red, true, -1, 0, 2);
+					DrawDebugSphere(GetWorld(), FVector(x * gridSize, y * gridSize, z * gridSize), 5, 2, FColor::Red, true, -1, 0, 2);
 					//DrawDebugBox(GetWorld(), FVector(x * gridSize, y * gridSize, z * gridSize), FVector(5, 5, 5), FColor::Red, true, -1, 0, 2);
 					FString print = FString::SanitizeFloat(matrix[z][y][x]);
 					//UE_LOG(LogTemp, Warning, TEXT("%s"), *print);
@@ -172,7 +174,7 @@ void ACavernGenerator::wallJitter(TArray<TArray<TArray<float>>>& matrix)
 	//}
 
 
-	TArray<TArray<float>> matrixPerlin = PerlinNoise2D(perlinSeed, y_size, z_size - 1);
+	TArray<TArray<float>> matrixPerlin = PerlinNoise2D(perlinSeed, y_size, z_size - 1, WallNoiseOffset, 0);
 
 	//FString print = FString::SanitizeFloat(matrixPerlin.Num());
 	//UE_LOG(LogTemp, Warning, TEXT("%s"), *print);

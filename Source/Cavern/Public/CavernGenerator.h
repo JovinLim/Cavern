@@ -23,8 +23,7 @@ public:
 	//UStaticMesh* _smComp;
 	TArray<TArray<int>> groundMatrix;
 
-	UPROPERTY(EditInstanceOnly, Category = "Marching Cubes")
-	int gridSize = 10;
+	int gridSize = 50;
 
 	UPROPERTY(EditInstanceOnly, Category = "Marching Cubes")
 	int marchingSeed = 1;
@@ -36,11 +35,14 @@ public:
 		float SurfaceLevel = 0.0f;
 
 	UPROPERTY(EditInstanceOnly, Category = "Map Size")
-		int z_size = 50;
+		int z_size = 5;
 	UPROPERTY(EditInstanceOnly, Category = "Map Size")
-		int y_size = 100;
+		int y_size = 10;
 	UPROPERTY(EditInstanceOnly, Category = "Map Size")
-		int x_size = 100;
+		int x_size = 10;
+
+	UPROPERTY(EditInstanceOnly, Category = "Map Size")
+		int stagSeed = 10;
 
 	UPROPERTY(EditInstanceOnly, Category = "Cellular Automata")
 		int CASeed = 1;
@@ -57,7 +59,7 @@ public:
 		int maxStagSize = 20;
 
 	UPROPERTY(EditInstanceOnly, Category = "Cellular Automata")
-		int EmptySpace = 60;
+		float EmptySpace = 60.0;
 
 	//UPROPERTY(EditAnywhere, Category = "Marching Cubes")
 	//	int x_jitter = 5;
@@ -86,7 +88,7 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Perlin Noise")
 		int WallNoiseOffset = 250;
 	UPROPERTY(EditAnywhere, Category = "Perlin Noise")
-		float StagNoiseOffset = 1.5;
+		float StagNoiseOffset = 500;
 	UPROPERTY(EditAnywhere, Category = "Perlin Noise")
 		float PerlinUVScale = 500;
 
@@ -102,10 +104,9 @@ public:
 	void ApplyMesh(int section) const;
 	void SmoothMatrix(TArray<TArray<TArray<float>>>& matrix);
 	int adjCount(TArray<TArray<TArray<float>>>& matrix, TArray<int> target);
-	
 	void wallJitter(TArray<TArray<TArray<float>>>& matrix);
 	int Noise(int seed);
-	TArray<TArray<float>> PerlinNoise2D(int seed, int x, int y);
+	TArray<TArray<float>> PerlinNoise2D(int seed, int x, int y, int offset, int mode);
 	TArray<TArray<TArray<float>>> PerlinNoise3D(int seed, int x, int y, int z);
 
 
@@ -115,14 +116,19 @@ private:
 
 	// Perlin Noise
 	unsigned char p[512];
-	float accumulatedNoise2D(float x, float y, int octaves);
+	float accumulatedNoise2D(float x, float y, int octaves, int mode);
 	float accumulatedNoise3D(float x, float y, float z, int octaves);
-	float noise2D(float x, float y);
+	float noise2D(float x, float y, int mode);
 	float noise3D(float x, float y, float z);
+	void GenPerlinStag(TArray<TArray<TArray<float>>>& matrix);
+	int Px = x_size * 5;
+	int Py = y_size * 5;
+	int Pz = z_size * 5;
+	int Pgrid = 10;
 
 	// Custom mesh from Perlin Noise
 	void CustomMesh(int seed, int section);
-	void CreateSurfaceMatrix(TArray<TArray<float>>& matrix, int type);
+	void CreateSurfaceMatrix(TArray<TArray<float>>& matrix, int type, int section);
 
 	// Marching Cubes
 	TArray<float> Voxels;

@@ -32,7 +32,7 @@ float grad(unsigned char hash, float x, float y, float z) {
 }
 
 // Perlin Noise
-TArray<TArray<float>> ACavernGenerator::PerlinNoise2D(int seed, int x, int y) {
+TArray<TArray<float>> ACavernGenerator::PerlinNoise2D(int seed, int x, int y, int offset, int mode) {
 
     TArray<TArray<float>> PerlinMatrix;
     int _seed = seed;
@@ -53,13 +53,13 @@ TArray<TArray<float>> ACavernGenerator::PerlinNoise2D(int seed, int x, int y) {
     for (int y_ = 0; y_ < y; y_++) {
         TArray<float> PerlinMatrixY;
         for (int x_ = 0; x_ < x; x_++) {
-            float noiseVal = (accumulatedNoise2D(float(x_ / perlinFrequency), float(y_ / perlinFrequency), perlinOctaves)) * WallNoiseOffset;
+            float noiseVal = (accumulatedNoise2D(float(x_ / perlinFrequency), float(y_ / perlinFrequency), perlinOctaves, mode)) * offset;
             FString print = FString::SanitizeFloat(noiseVal);
-            //UE_LOG(LogTemp, Warning, TEXT("%s"), *print);
             PerlinMatrixY.Add(noiseVal);
         }
         PerlinMatrix.Add(PerlinMatrixY);
     }
+
     
     return PerlinMatrix;
 }
@@ -101,7 +101,11 @@ TArray<TArray<TArray<float>>> ACavernGenerator::PerlinNoise3D(int seed, int x, i
 }
 
 
-float ACavernGenerator::noise2D(float x, float y) {
+float ACavernGenerator::noise2D(float x, float y, int mode) {
+
+    // Mode guide
+    // 0 - walls, 1 - stag
+
     int xi = (int)(std::floorf(x)) & 255;
     int yi = (int)(std::floorf(y)) & 255;
 
@@ -131,8 +135,15 @@ float ACavernGenerator::noise2D(float x, float y) {
         )
     );
 
-    // return avg mapped from [-1, 1] (theoretically) to [0, 1]
-    return map(avg, -1, 1, 0, 1);
+    if (mode == 0) {
+        return avg;
+    }
+
+    else {
+        // return avg mapped from [-1, 1] (theoretically) to [0, 1]
+        return map(avg, -1, 1, 0, 1);
+    }
+
 }
 
 float ACavernGenerator::noise3D(float x, float y, float z)
@@ -199,9 +210,12 @@ float ACavernGenerator::noise3D(float x, float y, float z)
 }
 
 
-
 // 2D accumulated noise
-float ACavernGenerator::accumulatedNoise2D(float x, float y, int octaves) {
+float ACavernGenerator::accumulatedNoise2D(float x, float y, int octaves, int mode) {
+
+    // Mode guide
+    // 0 - walls, 1 - stag
+
     float result = 0.0f;
     float amplitude = 1.3f;
     float frequency = 0.1f;
@@ -210,7 +224,7 @@ float ACavernGenerator::accumulatedNoise2D(float x, float y, int octaves) {
     float maxVal = 0.0f; // used to normalize result
 
     for (; octaves > 0; octaves--) {
-        result += noise2D(x * frequency, y * frequency) * amplitude;
+        result += noise2D(x * frequency, y * frequency, mode) * amplitude;
         //result += noise2D(x * frequency, y * frequency);
 
 
