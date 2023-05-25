@@ -1,4 +1,6 @@
-# Cavern
+# Perlin Noise Surface Generator
+
+This is part of a separate project which implements a random procedural generation of rooms with cavern-like interiors.
 
 Developed with Unreal Engine 5 and C++
 Check the parameter guide for more information on how changing each parameter affects the Perlin Noise surface!
